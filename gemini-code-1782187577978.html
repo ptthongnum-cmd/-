@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Phonics AR Game: แม่มดน้อยปรุงยาผสมเสียง</title>
+    <!-- ดึงฟอนต์ลายมือน่ารักๆ "Itim" และ "Mali" มาใช้งาน -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Itim&family=Mali:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            /* ตั้งค่าให้ใช้ฟอนต์น่ารักเป็นหลัก ทั้งภาษาไทยและอังกฤษ */
+            font-family: 'Itim', 'Mali', sans-serif; 
+            background-color: #000;
+        }
+        /* เปิดกล้องหน้าเป็นพื้นหลัง */
+        #webcam {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 1; transform: scaleX(-1);
+        }
+        #game-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2; display: flex; flex-direction: column;
+            justify-content: space-between; box-sizing: border-box; padding: 15px;
+        }
+        /* แถบโจทย์ด้านบน สไตล์ปราสาทแม่มด */
+        .witch-box {
+            background: linear-gradient(135deg, #4a148c, #8e24aa);
+            border: 4px solid #ba68c8; border-radius: 25px; padding: 12px;
+            text-align: center; color: #fff; box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+        }
+        .witch-box h2 { 
+            margin: 0; 
+            font-size: 26px; 
+            font-family: 'Itim', sans-serif;
+            text-shadow: 2px 2px 4px #000; 
+        }
+        .target-sound { 
+            font-size: 55px; 
+            font-weight: bold; 
+            color: #ccff00; 
+            margin: 5px 0; 
+            text-shadow: 3px 3px 0px #3b0066; 
+            font-family: 'Mali', sans-serif;
+        }
+
+        /* ส่วนตรงกลาง: หม้อปรุงยาเวทมนตร์ */
+        .cauldron-area {
+            display: flex; flex-direction: column; align-items: center; margin-top: 10px;
+        }
+        .cauldron {
+            font-size: 80px; filter: drop-shadow(0px 8px 10px rgba(0,0,0,0.5));
+            animation: boil 2s infinite ease-in-out; cursor: pointer;
+        }
+        @keyframes boil {
+            0%, 100% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1.08) translateY(-5px); }
+        }
+        .spell-text {
+            background: rgba(255, 255, 255, 0.95); border: 4px solid #6a1b9a;
+            border-radius: 20px; padding: 6px 25px; font-size: 32px; font-weight: bold;
+            color: #3b0066; margin-top: -10px; box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            min-width: 160px; text-align: center;
+            font-family: 'Mali', sans-serif;
+        }
+
+        /* แถบตัวอักษรด้านล่าง (ขี่ไม้กวาดแม่มด) */
+        .witch-bar {
+            background: rgba(26, 0, 41, 0.88); border-top: 4px solid #ba68c8;
+            padding: 18px 10px; border-radius: 30px 30px 0 0; margin: -15px;
+        }
+        .witch-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; justify-items: center;
+        }
+        .letter-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; background: linear-gradient(135deg, #ff9100, #ff3d00);
+            border: 2px solid #fff; border-radius: 18px; width: 68px; height: 68px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.4); transition: 0.1s;
+        }
+        .letter-item:active { transform: scale(0.85); }
+        .witch-icon { font-size: 18px; margin-bottom: -2px; }
+        .letter-text { 
+            font-weight: bold; 
+            font-size: 28px; 
+            color: #fff; 
+            text-shadow: 2px 2px 2px #000; 
+            font-family: 'Itim', sans-serif;
+        }
+
+        /* ป๊อปอัปเฉลย */
+        #alert-box {
+            display: none; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: white;
+            border: 6px solid #8e24aa; padding: 25px; border-radius: 25px;
+            text-align: center; z-index: 99; box-shadow: 0 12px 30px rgba(0,0,0,0.5); width: 80%; max-width: 280px;
+        }
+        #alert-box h1 { margin: 0 0 10px 0; font-size: 55px; }
+        #alert-box p { 
+            margin: 0 0 20px 0; 
+            font-size: 22px; 
+            font-weight: bold; 
+            color: #333;
+            font-family: 'Itim', sans-serif;
+        }
+        #alert-box button {
+            background: #8e24aa; color: white; border: none; padding: 10px 35px;
+            font-size: 20px; border-radius: 15px; cursor: pointer; font-weight: bold;
+            font-family: 'Itim', sans-serif; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <video id="webcam" autoplay playsinline></video>
+
+    <div id="game-container">
+        <!-- โจทย์ด้านบน -->
+        <div class="witch-box">
+            <h2>🔮 แม่มดน้อยปรุงยา Phonics</h2>
+            <div style="font-size: 15px; margin-top: 3px;">เลือกอักษรมาผสมเสียงข้างล่างให้มีความหมาย:</div>
+            <div class="target-sound" id="sound-display">-at</div>
+            <div style="color: #e0f7fa; font-size: 16px;">คะแนนเวทมนตร์: <span id="score-display">0</span> คะแนน ⭐️</div>
+        </div>
+
+        <!-- หม้อปรุงยาตรงกลาง -->
+        <div class="cauldron-area">
+            <div class="cauldron">🧪</div>
+            <div class="spell-text" id="basket-display">?</div>
+        </div>
+
+        <!-- ปุ่มตัวอักษรภาษาอังกฤษ -->
+        <div class="witch-bar">
+            <div class="witch-grid" id="alphabet-container"></div>
+        </div>
+    </div>
+
+    <!-- ป๊อปอัปแจ้งผลการปรุงยา -->
+    <div id="alert-box">
+        <h1 id="alert-icon">✨</h1>
+        <p id="alert-text">ร่ายมนตร์สำเร็จ!</p>
+        <button onclick="nextQuestion()">ปรุงยาต่อไป 🔮</button>
+    </div>
+
+    <script>
+        let score = 0;
+        const soundFamilies = ["at", "an", "ap"];
+        let currentFamily = "at";
+        
+        const starterLetters = ["B", "C", "F", "M", "P", "R", "S", "V", "T", "H", "N", "D"];
+        const witchIcons = ["🦇", "🐈", "🎃", "🧙‍♀️", "🧹", "🦉", "👁️", "🍄"];
+
+        const validWords = [
+            "BAT", "CAT", "FAT", "MAT", "PAT", "RAT", "SAT", "HAT", 
+            "BAN", "CAN", "FAN", "MAN", "PAN", "RAN", "VAN", "TAN", 
+            "CAP", "MAP", "NAP", "RAP", "SAP", "TAP" 
+        ];
+
+        // เปิดกล้องหน้าจอ
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+            .then(function(stream) { document.getElementById('webcam').srcObject = stream; })
+            .catch(function(err) { 
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function(stream) { document.getElementById('webcam').srcObject = stream; });
+            });
+
+        function createWitchButtons() {
+            const container = document.getElementById('alphabet-container');
+            container.innerHTML = "";
+            
+            starterLetters.forEach(letter => {
+                let randomIcon = witchIcons[Math.floor(Math.random() * witchIcons.length)];
+                
+                const button = document.createElement('div');
+                button.className = 'letter-item';
+                button.onclick = function() { mixPotion(letter); };
+                button.innerHTML = `<span class="witch-icon">${randomIcon}</span><span class="letter-text">${letter}</span>`;
+                
+                container.appendChild(button);
+            });
+        }
+
+        function mixPotion(letter) {
+            let combinedWord = letter + currentFamily.toUpperCase();
+            document.getElementById('basket-display').innerText = combinedWord;
+            
+            const alertBox = document.getElementById('alert-box');
+            const alertIcon = document.getElementById('alert-icon');
+            const alertText = document.getElementById('alert-text');
+
+            if (validWords.includes(combinedWord)) {
+                score += 1;
+                document.getElementById('score-display').innerText = score;
+                document.getElementById('basket-display').style.background = "#ccff00";
+                
+                alertIcon.innerText = "💥🔮";
+                alertText.innerText = `ปิ๊ง! ได้คำว่า "${combinedWord}" ร่ายมนตร์สำเร็จจ้า!`;
+            } else {
+                document.getElementById('basket-display').style.background = "#ffcdd2";
+                alertIcon.innerText = "💨💨";
+                alertText.innerText = `อุ๊ย! คำว่า "${combinedWord}" ปรุงยาไม่สำเร็จ ไม่มีคำนี้คู่กับเสียงนี้นะจ๊ะ`;
+            }
+            
+            setTimeout(() => {
+                alertBox.style.display = "block";
+            }, 400);
+        }
+
+        function nextQuestion() {
+            document.getElementById('alert-box').style.display = "none";
+            document.getElementById('basket-display').innerText = "?";
+            document.getElementById('basket-display').style.background = "rgba(255, 255, 255, 0.9)";
+            
+            let randomIndex = Math.floor(Math.random() * soundFamilies.length);
+            currentFamily = soundFamilies[randomIndex];
+            document.getElementById('sound-display').innerText = "-" + currentFamily;
+            
+            createWitchButtons();
+        }
+
+        createWitchButtons();
+    </script>
+</body>
+</html>
